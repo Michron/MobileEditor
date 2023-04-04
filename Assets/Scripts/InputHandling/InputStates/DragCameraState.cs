@@ -3,10 +3,14 @@
 using MobileEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.InputSystem.Utilities;
+
 using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
 namespace MobileEditor.InputHandling.InputStates
 {
+    /// <summary>
+    /// Handles moving the camera when the user is swiping the touchscreen.
+    /// </summary>
     internal sealed class DragCameraState : IInputState
     {
         private readonly InputHandler _inputHandler;
@@ -19,6 +23,9 @@ namespace MobileEditor.InputHandling.InputStates
             _cameraController = cameraController;
         }
 
+        /// <summary>
+        /// The screenspace starting position of the swipe action. Required to be set by the previous state.
+        /// </summary>
         public Vector2 InitialScreenPoint { get; set; }
 
         public void OnEnterState()
@@ -39,40 +46,24 @@ namespace MobileEditor.InputHandling.InputStates
                 return;
             }
 
+            // Instead of directly using the delta of the touch, the touch is converted to a point in the world,
+            // which is then subtracted from the world point of the initial touch position. This way the resulting
+            // delta more accurately defines the distance the finger traveled in the world. This automatically
+            // makes swiping when zoomed out faster as well.
+
             Touch touch = touches[0];
             Vector3 currentPoint = GetWorldPoint(touch.screenPosition);
             Vector3 initialPoint = GetWorldPoint(InitialScreenPoint);
 
-            Vector3 delta = (initialPoint - currentPoint);
+            Vector3 delta = initialPoint - currentPoint;
 
             delta = ConvertDragDirectionToWorld(delta);
             delta = ConvertWorldToPivotDirection(delta);
 
+            // Filter out any Y-axis movement so the camera stays grounded.
             Vector3 flatDelta = new Vector3(delta.x, 0, delta.z);
 
             _cameraController.MoveCamera(_initialPosition + flatDelta);
-        }
-
-        private Vector3 ConvertDragDirectionToWorld(Vector3 direction)
-        {
-            Quaternion cameraRotation = _cameraController.CameraTransform.rotation;
-
-            // Create a new rotation, with up being the normal of drag plane, and forward the up direction of the camera.
-            Vector3 cameraUp = cameraRotation * new Vector3(0.0f, 1.0f, 0.0f);
-            Vector3 cameraBack = cameraRotation * new Vector3(0.0f, 0.0f, -1.0f);
-            Quaternion rotation = Quaternion.LookRotation(cameraUp, cameraBack);
-
-            // Invert the rotation so it transforms the direction to world space, instead of to the drag plane's space.
-            rotation = Quaternion.Inverse(rotation);
-
-            return rotation * direction;
-        }
-
-        private Vector3 ConvertWorldToPivotDirection(Vector3 direction)
-        {
-            Quaternion rotation = _cameraController.Pivot.rotation;
-            
-            return rotation * direction;
         }
 
         private bool VerifyState(ReadOnlyArray<Touch> touches)
@@ -94,6 +85,28 @@ namespace MobileEditor.InputHandling.InputStates
             }
 
             return true;
+        }
+
+        private Vector3 ConvertDragDirectionToWorld(Vector3 direction)
+        {
+            Quaternion cameraRotation = _cameraController.CameraTransform.rotation;
+
+            // Create a new rotation, with up being the normal of drag plane, and forward the up direction of the camera.
+            Vector3 cameraUp = cameraRotation * new Vector3(0.0f, 1.0f, 0.0f);
+            Vector3 cameraBack = cameraRotation * new Vector3(0.0f, 0.0f, -1.0f);
+            Quaternion rotation = Quaternion.LookRotation(cameraUp, cameraBack);
+
+            // Invert the rotation so it transforms the direction to world space, instead of to the drag plane's space.
+            rotation = Quaternion.Inverse(rotation);
+
+            return rotation * direction;
+        }
+
+        private Vector3 ConvertWorldToPivotDirection(Vector3 direction)
+        {
+            Quaternion rotation = _cameraController.Pivot.rotation;
+
+            return rotation * direction;
         }
 
         private Vector3 GetWorldPoint(Vector2 screenPoint)

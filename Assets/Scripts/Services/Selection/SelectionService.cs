@@ -6,14 +6,25 @@ using UnityEngine;
 
 namespace MobileEditor.Services.Selection
 {
+    /// <summary>
+    /// Service responsible for keeping track of the current selection.
+    /// </summary>
     public class SelectionService : MonoBehaviour
     {
         private UIManager? _uiManager;
         private Camera _camera = null!;
         private RectTransform _canvasRect = null!;
 
+        /// <summary>
+        /// The currently selection object.
+        /// </summary>
         public SelectableObject? CurrentSelection { get; private set; }
 
+        /// <summary>
+        /// Initialize this <see cref="SelectionService"/>.
+        /// </summary>
+        /// <param name="uiManager">The <see cref="UIManager"/> used in the scene.</param>
+        /// <param name="cameraController">The <see cref="CameraController"/> used in the scene.</param>
         public void Initialize(UIManager uiManager, CameraController cameraController)
         {
             _uiManager = uiManager;
@@ -36,11 +47,15 @@ namespace MobileEditor.Services.Selection
             }
         }
 
+        /// <summary>
+        /// Change the current selection to the specified <paramref name="selectable"/>.
+        /// </summary>
+        /// <param name="selectable">The object to select, or <see langword="null"/> to clear the selection.</param>
         public void ChangeSelection(SelectableObject? selectable)
         {
             CurrentSelection = selectable;
-            
-            if(selectable != null)
+
+            if (selectable != null)
             {
                 _uiManager!.ShowSelectionIndicator();
             }
@@ -50,6 +65,9 @@ namespace MobileEditor.Services.Selection
             }
         }
 
+        /// <summary>
+        /// Clears the current selection.
+        /// </summary>
         public void ClearSelection()
         {
             _uiManager!.HideSelectionIndicator();

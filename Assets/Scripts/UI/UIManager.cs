@@ -3,16 +3,35 @@
 using System;
 using MobileEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace MobileEditor.UI
 {
+    /// <summary>
+    /// Manages the main UI of the scene.
+    /// </summary>
     public class UIManager : MonoBehaviour
     {
+        /// <summary>
+        /// Invoked when an asset icon in the UI is dragged. The index of the asset is passed on to the delegate.
+        /// </summary>
         public event Action<int>? AssetDragged;
+
+        /// <summary>
+        /// Invoked when a pointer is released on the delete button.
+        /// </summary>
         public event Action? DeleteObject;
+
+        /// <summary>
+        /// Invoked when the undo button is pressed.
+        /// </summary>
         public event Action? UndoInvoked;
+
+        /// <summary>
+        /// Invoked when the redo button is pressed.
+        /// </summary>
         public event Action? RedoInvoked;
 
         [SerializeField]
@@ -32,6 +51,7 @@ namespace MobileEditor.UI
         [SerializeField]
         private Image? _deleteImage;
         [SerializeField]
+        [Tooltip("Custom highlight color for the delete button when it's being hovered over.")]
         private Color _deleteHighlightColor;
 
         private Color _initialDeleteColor;
@@ -63,6 +83,10 @@ namespace MobileEditor.UI
             _redoButton!.onClick.AddListener(OnRedoButtonClicked);
         }
 
+        /// <summary>
+        /// Change the UI state to the specified state.
+        /// </summary>
+        /// <param name="state">The state to switch to.</param>
         public void ChangeUIState(UIState state)
         {
             switch (state)
@@ -83,16 +107,23 @@ namespace MobileEditor.UI
             }
         }
 
+        /// <summary>
+        /// Assign values to the asset images in the UI based on their respective <see cref="AssetDescriptor"/>.
+        /// </summary>
+        /// <param name="descriptors">The <see cref="AssetDescriptor"/> instances to apply to the UI.</param>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="descriptors"/> contains more instances than the UI has images available for the assets.
+        /// </exception>
         public void SetAssetImages(ReadOnlySpan<AssetDescriptor> descriptors)
         {
             // For now the amount of spawnable assets will be limited to the amount of slots that are in the UI.
-            if(_assetImages!.Length < descriptors.Length)
+            if (_assetImages!.Length < descriptors.Length)
             {
                 throw new ArgumentException(
                     $"Unable to assign sprites to asset images, because the size of {nameof(descriptors)} is larger than the size of {nameof(_assetImages)}.");
             }
 
-            for(int i = 0; i < _assetImages.Length; i++)
+            for (int i = 0; i < _assetImages.Length; i++)
             {
                 if (i < descriptors.Length)
                 {
@@ -105,38 +136,62 @@ namespace MobileEditor.UI
             }
         }
 
+        /// <summary>
+        /// Set the interactable state of the undo button.
+        /// </summary>
+        /// <param name="enabled">The interactable state to apply to the button.</param>
         public void SetUndoButtonState(bool enabled)
         {
             _undoButton!.interactable = enabled;
         }
 
+        /// <summary>
+        /// Set the state of the redo button.
+        /// </summary>
+        /// <param name="enabled">The interactable state to apply to the button.</param>
         public void SetRedoButtonState(bool enabled)
         {
             _redoButton!.interactable = enabled;
         }
 
+        /// <summary>
+        /// Disable interaction for the undo button.
+        /// </summary>
         public void DisableUndo()
         {
             _undoButton!.interactable = false;
         }
 
+        /// <summary>
+        /// Disable interaciton for the redo button.
+        /// </summary>
         public void DisableRedo()
         {
             _redoButton!.interactable = false;
         }
 
+        /// <summary>
+        /// Show the selection indicator in the UI.
+        /// </summary>
         public void ShowSelectionIndicator()
         {
             _showSelectionIndicator = true;
             _selectionGroup!.SetActive(true);
         }
 
+        /// <summary>
+        /// Hide the seleciton indicator in the UI.
+        /// </summary>
         public void HideSelectionIndicator()
         {
             _showSelectionIndicator = false;
             _selectionGroup!.SetActive(false);
         }
 
+        /// <summary>
+        /// Move the selection indicator to the specified screen position.
+        /// </summary>
+        /// <param name="screenPosition">The position in the screen to move the indicator to.</param>
         public void MoveSelectionIndicator(Vector2 screenPosition)
         {
             _selectionTransform!.localPosition = screenPosition;
@@ -164,44 +219,28 @@ namespace MobileEditor.UI
 
         private void InitializeDeleteTriggers()
         {
-            // Also use this opportunity to store the current color of the image.
-            _initialDeleteColor = _deleteImage!.color;
-
-            EventTrigger? trigger = _deleteImage.GetComponent<EventTrigger>();
-            Debug.Assert(trigger != null);
-
-            // PointerUp
+            static void AddTrigger(EventTrigger trigger, EventTriggerType triggerType, UnityAction<BaseEventData> action)
             {
                 EventTrigger.Entry entry = new()
                 {
-                    eventID = EventTriggerType.PointerUp
+                    eventID = triggerType
                 };
 
-                entry.callback.AddListener(OnDeleteObject);
+                entry.callback.AddListener(action);
                 trigger!.triggers.Add(entry);
             }
 
-            // PointerEnter
-            {
-                EventTrigger.Entry entry = new()
-                {
-                    eventID = EventTriggerType.PointerEnter
-                };
+            // Also use this opportunity to store the current color of the image.
+            _initialDeleteColor = _deleteImage!.color;
 
-                entry.callback.AddListener(EnterDeleteImage);
-                trigger.triggers.Add(entry);
+            if (!_deleteImage.TryGetComponent(out EventTrigger trigger))
+            {
+                throw new MissingComponentException($"{_deleteImage.gameObject.name} is missing an {nameof(EventTrigger)} component.");
             }
 
-            // PointerExit
-            {
-                EventTrigger.Entry entry = new()
-                {
-                    eventID = EventTriggerType.PointerExit
-                };
-
-                entry.callback.AddListener(ExitDeleteImage);
-                trigger.triggers.Add(entry);
-            }
+            AddTrigger(trigger!, EventTriggerType.PointerUp, OnDeleteObject);
+            AddTrigger(trigger!, EventTriggerType.PointerEnter, EnterDeleteImage);
+            AddTrigger(trigger!, EventTriggerType.PointerExit, ExitDeleteImage);
         }
 
         private void DisableSelectionIndicator()
@@ -216,7 +255,7 @@ namespace MobileEditor.UI
 
         private void EnterDeleteImage(BaseEventData eventData)
         {
-            if(eventData is not PointerEventData pointerEventData)
+            if (eventData is not PointerEventData pointerEventData)
             {
                 return;
             }

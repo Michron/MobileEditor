@@ -5,18 +5,34 @@ using UnityEngine;
 
 namespace MobileEditor.Services.Selection
 {
+    /// <summary>
+    /// Marks a GameObject as selectable in the scene, meaning it can be moved around and deleted.
+    /// </summary>
     public class SelectableObject : MonoBehaviour
     {
         private static readonly List<Renderer> RendererCache = new();
 
         private float _size;
-        private Transform _transform = null!;
 
+        /// <summary>
+        /// The ID of the asset this was spawned from.
+        /// </summary>
         public int AssetId { get; internal set; }
+
+        /// <summary>
+        /// The instance ID of this object.
+        /// </summary>
         public int InstanceId { get; internal set; }
 
+        /// <summary>
+        /// The approximate center of the object, based on its bounds.
+        /// </summary>
         public Vector3 Center => Transform.position + new Vector3(0.0f, _size, 0.0f);
-        public Transform Transform { get => _transform; set => _transform = value; }
+
+        /// <summary>
+        /// Reference to the <see cref="UnityEngine.Transform"/> of this object.
+        /// </summary>
+        public Transform Transform { get; set; } = null!;
 
         private void Awake()
         {
@@ -53,6 +69,7 @@ namespace MobileEditor.Services.Selection
                 bounds.Encapsulate(renderer.bounds);
             }
 
+            // This will be converted to a sphere's radius, so we only need the largest extent.
             return Mathf.Max(bounds.extents.x, bounds.extents.y);
         }
     }

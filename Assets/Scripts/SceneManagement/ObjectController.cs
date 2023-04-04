@@ -6,8 +6,14 @@ using UnityEngine;
 
 namespace MobileEditor.SceneManagement
 {
+    /// <summary>
+    /// Manages editing selectable objects in the scene by smoothly moving them around.
+    /// </summary>
     public class ObjectController : MonoBehaviour
     {
+        /// <summary>
+        /// Invoked when an object has finished moving.
+        /// </summary>
         public event Action<Transform, Vector3, Vector3>? MovedObject;
 
         [SerializeField]
@@ -26,6 +32,9 @@ namespace MobileEditor.SceneManagement
         private Vector3 _initialPosition;
         private Vector3 _targetPosition;
 
+        /// <summary>
+        /// The initial position of the last moved object before it was moved.
+        /// </summary>
         public Vector3 InitialPosition => _initialPosition;
 
         private void Update()
@@ -33,6 +42,11 @@ namespace MobileEditor.SceneManagement
             UpdateMoveAction();
         }
 
+        /// <summary>
+        /// Initiates a new move action for an object. This will temporarily disable colliders on the object to avoid collision with other object.
+        /// </summary>
+        /// <param name="transform">The object to move.</param>
+        /// <param name="_targetPosition">The position to which the object should be moved immediately.</param>
         public void StartMoveAction(Transform transform, Vector3 _targetPosition)
         {
             _transform = transform;
@@ -45,11 +59,18 @@ namespace MobileEditor.SceneManagement
             DisableColliders(_transform);
         }
 
+        /// <summary>
+        /// Updates the target position of the object that's currently being moved.
+        /// </summary>
+        /// <param name="targetPosition">The new target position.</param>
         public void SetMoveTarget(Vector3 targetPosition)
         {
             _targetPosition = targetPosition;
         }
 
+        /// <summary>
+        /// Finish moving the current object, and place it back in the scene.
+        /// </summary>
         public void EndMoveAction()
         {
             if(_transform == null)

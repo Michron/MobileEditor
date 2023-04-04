@@ -14,6 +14,10 @@ using UnityEngine;
 
 namespace MobileEditor.SceneManagement
 {
+    /// <summary>
+    /// Main manager of the game's scene. Manages spawning, deleting, and moving objects, saving and loading scenes, and
+    /// hooking up references and events to the other parts of the scene.
+    /// </summary>
     [RequireComponent(typeof(InputHandler), typeof(ObjectController), typeof(SelectionService))]
     public class SceneManager : MonoBehaviour
     {
@@ -80,16 +84,29 @@ namespace MobileEditor.SceneManagement
             LoadScene();
         }
 
+        /// <summary>
+        /// Restores the <paramref name="selectable"/> in the registry.
+        /// </summary>
+        /// <param name="selectable">The object to restore.</param>
         public void RestoreAssetInstance(SelectableObject selectable)
         {
             _objectRegistry.AddObjectChecked(selectable);
         }
 
+        /// <summary>
+        /// Gets a <see cref="SelectableObject"/> instance based on its instance ID.
+        /// </summary>
+        /// <param name="instanceId">The ID to use to lookup the <see cref="SelectableObject"/></param>
+        /// <returns>The <see cref="SelectableObject"/> that belongs to the specified ID.</returns>
         public SelectableObject GetAssetInstance(int instanceId)
         {
             return _objectRegistry.GetObjectChecked(instanceId);
         }
 
+        /// <summary>
+        /// Remove an object from the registry.
+        /// </summary>
+        /// <param name="instanceId">The ID of the object to remove.</param>
         public void RemoveAssetInstance(int instanceId)
         {
             _objectRegistry.RemoveObjectChecked(instanceId);
@@ -114,7 +131,7 @@ namespace MobileEditor.SceneManagement
         {
             AssetDescriptor descriptor = _assetDescriptors![index];
             GameObject instance = Instantiate(descriptor.Asset, _sceneRoot);
-            
+
             if (!instance.TryGetComponent(out SelectableObject selectable))
             {
                 throw new ArgumentException($"Unable to get {nameof(SelectableObject)} component from asset.");

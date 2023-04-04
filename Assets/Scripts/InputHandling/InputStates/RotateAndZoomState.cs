@@ -3,10 +3,14 @@
 using MobileEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.InputSystem.Utilities;
+
 using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
 namespace MobileEditor.InputHandling.InputStates
 {
+    /// <summary>
+    /// Reads input with two fingers to determine if the camera should be rotated, and/or zoomed in and out.
+    /// </summary>
     internal sealed class RotateAndZoomState : IInputState
     {
         private readonly InputHandler _inputHandler;
@@ -43,10 +47,41 @@ namespace MobileEditor.InputHandling.InputStates
                 return;
             }
 
+            // Get the pinch-distance, and the direction in world space of the input.
             (float distance, Vector2 direction) = GetTouchData(touches);
 
             UpdateZoomLevel(distance);
             UpdateRotation(direction);
+        }
+
+        private bool VerifyState(ReadOnlyArray<Touch> touches)
+        {
+            int touchCount = touches.Count;
+
+            if (touchCount == 2)
+            {
+                return true;
+            }
+
+            if (touchCount == 1)
+            {
+                Touch touch = touches[0];
+
+                // The touch.startScreenPosition is not valid for the DragCameraState,
+                // so we have to manually set the initial point.
+                _inputHandler.ChangeState<DragCameraState, Vector2>(
+                    touch.screenPosition,
+                    static (state, position) =>
+                    {
+                        state.InitialScreenPoint = position;
+                    });
+
+                return false;
+            }
+
+            _inputHandler.ChangeState<IdleState>();
+
+            return false;
         }
 
         private void UpdateRotation(Vector2 direction)
@@ -64,34 +99,6 @@ namespace MobileEditor.InputHandling.InputStates
             _previousDistance = distance;
 
             _cameraController.ZoomCamera(delta);
-        }
-
-        private bool VerifyState(ReadOnlyArray<Touch> touches)
-        {
-            int touchCount = touches.Count;
-
-            if (touchCount == 2)
-            {
-                return true;
-            }
-
-            if (touchCount == 1)
-            {
-                Touch touch = touches[0];
-
-                _inputHandler.ChangeState<DragCameraState, Vector2>(
-                    touch.screenPosition,
-                    static (state, position) =>
-                    {
-                        state.InitialScreenPoint = position;
-                    });
-
-                return false;
-            }
-
-            _inputHandler.ChangeState<IdleState>();
-
-            return false;
         }
 
         private (float distance, Vector2 direction) GetTouchData(ReadOnlyArray<Touch> touches)

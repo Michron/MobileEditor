@@ -5,6 +5,9 @@ using UnityEngine;
 
 namespace MobileEditor.Services.Undo.Actions
 {
+    /// <summary>
+    /// Undo action for spawn operations.
+    /// </summary>
     internal sealed class UndoSpawnAction : IUndoAction
     {
         private readonly SceneManager _sceneManager;
@@ -33,15 +36,20 @@ namespace MobileEditor.Services.Undo.Actions
                 throw new ArgumentException($"The {nameof(gameObject)} does not have a {nameof(SelectableObject)} component.");
             }
 
+            // The IDs on the selectable were lost after respawning, so assign them again.
             selectable.AssetId = _assetId;
             selectable.InstanceId = _instanceId;
 
+            // Register the selectable in the registry again.
             _sceneManager.RestoreAssetInstance(selectable);
         }
 
         public void Undo()
         {
+            // Get the selectable from the registry, because references to the original selectable might be gone already.
             SelectableObject selectable = _sceneManager.GetAssetInstance(_instanceId);
+
+            // Remove the object from the registry so it's not still saved with the scene.
             _sceneManager.RemoveAssetInstance(selectable.InstanceId);
 
             GameObject.Destroy(selectable.gameObject);

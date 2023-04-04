@@ -7,6 +7,10 @@ using UnityEngine.InputSystem.Utilities;
 
 namespace MobileEditor.InputHandling.InputStates
 {
+    /// <summary>
+    /// The default input state when nothing is happening.
+    /// This state just listens for input to happen, and switch to the correct state based on the input that is received.
+    /// </summary>
     internal sealed class IdleState : IInputState
     {
         private readonly InputHandler _handler;
@@ -31,6 +35,7 @@ namespace MobileEditor.InputHandling.InputStates
             ReadOnlyArray<Touch> touches = Touch.activeTouches;
             int touchCount = touches.Count;
 
+            // We only handle input with 1 or 2 fingers at the moment, so ignore anything else.
             if (touchCount == 0 || touchCount > 2)
             {
                 return;

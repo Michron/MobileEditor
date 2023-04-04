@@ -11,12 +11,13 @@ using MobileEditor.Services.Selection;
 
 namespace MobileEditor.InputHandling
 {
+    /// <summary>
+    /// Handles input and converts it to camera movement, or object editing actions.
+    /// </summary>
     public class InputHandler : MonoBehaviour
     {
         private IReadOnlyDictionary<Type, IInputState> _states = null!;
         private IInputState _currentState = null!;
-
-        public CameraController CameraController { get; private set; } = null!;
 
         private void Awake()
         {
@@ -28,13 +29,19 @@ namespace MobileEditor.InputHandling
             _currentState.Update();
         }
 
-        public void Initialize(
+        /// <summary>
+        /// Initializes this <see cref="InputHandler"/> by preparing all input states.
+        /// </summary>
+        /// <param name="uiManager">The <see cref="UIManager"/> of the scene.</param>
+        /// <param name="cameraController">The <see cref="CameraController"/> that receives input from this handler.</param>
+        /// <param name="objectController">The <see cref="ObjectController"/> responsible for smoothly placing moved objects.</param>
+        /// <param name="selectionService">The <see cref="SelectionService"/> of the scene.</param>
+        internal void Initialize(
             UIManager uiManager,
             CameraController cameraController,
             ObjectController objectController,
             SelectionService selectionService)
         {
-            CameraController = cameraController;
             _currentState = new IdleState(this);
 
             _states = new Dictionary<Type, IInputState>()
@@ -49,6 +56,10 @@ namespace MobileEditor.InputHandling
             _currentState.OnEnterState();
         }
 
+        /// <summary>
+        /// Change the current state to a state of type <typeparamref name="TState"/>.
+        /// </summary>
+        /// <typeparam name="TState">The type of state to switch to.</typeparam>
         internal void ChangeState<TState>() where TState : class, IInputState
         {
             TState state = GetStateChecked<TState>();
@@ -60,6 +71,17 @@ namespace MobileEditor.InputHandling
             _currentState.OnEnterState();
         }
 
+        /// <summary>
+        /// Change the current state to a state of type <typeparamref name="TState"/>, and initialize the state with an action.
+        /// </summary>
+        /// <typeparam name="TState">The type of state to switch to.</typeparam>
+        /// <typeparam name="TContext">The type of the context used in the initialization method.</typeparam>
+        /// <param name="context">
+        /// Contains data that is used when invoking <paramref name="initializeAction"/> to avoid values from being captured in the closure.
+        /// </param>
+        /// <param name="initializeAction">
+        /// An initialization method that's invoked before the <see cref="IInputState.OnEnterState"/> method of the state is invoked.
+        /// </param>
         internal void ChangeState<TState, TContext>(TContext context, Action<TState, TContext> initializeAction) where TState : class, IInputState
         {
             TState state = GetStateChecked<TState>();
@@ -73,14 +95,7 @@ namespace MobileEditor.InputHandling
             _currentState.OnEnterState();
         }
 
-        internal TState? GetState<TState>() where TState : class, IInputState
-        {
-            _states.TryGetValue(typeof(TState), out IInputState? state);
-
-            return state as TState;
-        }
-
-        internal TState GetStateChecked<TState>() where TState : class, IInputState
+        private TState GetStateChecked<TState>() where TState : class, IInputState
         {
             _states.TryGetValue(typeof(TState), out IInputState? state);
 

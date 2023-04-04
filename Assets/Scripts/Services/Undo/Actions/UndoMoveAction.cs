@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace MobileEditor.Services.Undo.Actions
 {
+    /// <summary>
+    /// Undo action for move operations.
+    /// </summary>
     internal sealed class UndoMoveAction : IUndoAction
     {
         private readonly SceneManager _sceneManager;

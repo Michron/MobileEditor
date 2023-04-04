@@ -5,17 +5,34 @@ using System.Collections.Generic;
 
 namespace MobileEditor.Services.Undo
 {
+    /// <summary>
+    /// Service responsible for managing undo actions in the scene.
+    /// </summary>
     public class UndoService
     {
+        /// <summary>
+        /// Invoked whenever the current head of the undo stack has changed.
+        /// </summary>
         public event Action<int>? UndoHeadChanged;
 
         private readonly List<IUndoAction> _undoActions = new();
 
         private int _head = -1;
 
+        /// <summary>
+        /// Whether an undo action can be performed.
+        /// </summary>
         public bool CanUndo => _head >= 0;
+
+        /// <summary>
+        /// Whether a redo action can be performed.
+        /// </summary>
         public bool CanRedo => _head < _undoActions.Count - 1;
 
+        /// <summary>
+        /// Register an <see cref="IUndoAction"/> instance.
+        /// </summary>
+        /// <param name="action">The action to register.</param>
         public void RegisterUndo(IUndoAction action)
         {
             TrimRedoActions();
@@ -26,6 +43,10 @@ namespace MobileEditor.Services.Undo
             OnUndoHeadChanged();
         }
 
+        /// <summary>
+        /// Undo the last registered action.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown if there's no action to undo.</exception>
         public void Undo()
         {
             if(_head < 0)
@@ -43,6 +64,10 @@ namespace MobileEditor.Services.Undo
             OnUndoHeadChanged();
         }
 
+        /// <summary>
+        /// Redo the last undone action.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown if there's no action to redo.</exception>
         public void Redo()
         {
             if (_head + 1 >= _undoActions.Count)
