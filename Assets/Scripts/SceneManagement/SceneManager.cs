@@ -40,6 +40,7 @@ namespace MobileEditor.SceneManagement
         private InputHandler _inputHandler = null!;
 
         private int _instanceIndex;
+        private bool _suppressSaving;
 
         private void Awake()
         {
@@ -178,9 +179,14 @@ namespace MobileEditor.SceneManagement
             Vector3 position = _objectController.InitialPosition;
 
             UndoDeleteAction action = new UndoDeleteAction(this, assetDescriptor, _sceneRoot, position, selectable.AssetId, selectable.InstanceId);
-            _undoService.RegisterUndo(action);
 
-            Destroy(gameObject);
+            // Suppress saving the scene until after the object has been truly destroyed.
+            using (SuppressSaving())
+            {
+                _undoService.RegisterUndo(action);
+
+                Destroy(gameObject);
+            }
 
             SaveScene();
         }
@@ -201,9 +207,9 @@ namespace MobileEditor.SceneManagement
             }
 
             UndoMoveAction action = new UndoMoveAction(this, initialPosition, finalPosition, selectable.InstanceId);
-            _undoService.RegisterUndo(action);
 
-            SaveScene();
+            // This will also trigger a scene save, so no need to trigger it manually.
+            _undoService.RegisterUndo(action);
         }
 
         private void PlaceObject(Transform transform, Vector3 position)
@@ -216,9 +222,9 @@ namespace MobileEditor.SceneManagement
             AssetDescriptor assetDescriptor = _assetDescriptors![selectable.AssetId];
 
             UndoSpawnAction action = new UndoSpawnAction(this, assetDescriptor, _sceneRoot, position, selectable.AssetId, selectable.InstanceId);
-            _undoService.RegisterUndo(action);
 
-            SaveScene();
+            // This will also trigger a scene save, so no need to trigger it manually.
+            _undoService.RegisterUndo(action);
         }
 
         private void UndoHeadChanged(int _)
@@ -257,6 +263,11 @@ namespace MobileEditor.SceneManagement
 
         private void SaveScene()
         {
+            if (_suppressSaving)
+            {
+                return;
+            }
+
             var sceneData = SceneData.Create(_objectRegistry.Objects);
             string jsonData = SceneData.Serialize(sceneData);
 
@@ -291,6 +302,33 @@ namespace MobileEditor.SceneManagement
                 SelectableObject selectable = SpawnAssetCore(objectData.AssetId);
 
                 selectable.Transform.position = objectData.Position;
+            }
+        }
+
+        private DisposableAction SuppressSaving()
+        {
+            _suppressSaving = true;
+
+            return new DisposableAction(this, static manager => manager._suppressSaving = false);
+        }
+
+        /// <summary>
+        /// Utility disposable to perform actions on the <see cref="SceneManager"/> without allocating closures.
+        /// </summary>
+        private readonly struct DisposableAction : IDisposable
+        {
+            private readonly SceneManager _sceneManager;
+            private readonly Action<SceneManager> _action;
+
+            public DisposableAction(SceneManager sceneManager, Action<SceneManager> action)
+            {
+                _sceneManager = sceneManager;
+                _action = action;
+            }
+
+            public void Dispose()
+            {
+                _action(_sceneManager);
             }
         }
     }
