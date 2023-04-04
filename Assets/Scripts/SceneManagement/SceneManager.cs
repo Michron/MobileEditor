@@ -39,7 +39,6 @@ namespace MobileEditor.SceneManagement
         private ObjectController _objectController = null!;
         private InputHandler _inputHandler = null!;
 
-        private bool _isNewObject;
         private int _instanceIndex;
 
         private void Awake()
@@ -117,7 +116,7 @@ namespace MobileEditor.SceneManagement
             SelectableObject selectable = SpawnAssetCore(index);
 
             // Enable the new object flag, so we know how to treat the next deleted or moved event.
-            _isNewObject = true;
+            selectable.IsNewObject = true;
 
             _selectionService.ChangeSelection(selectable);
 
@@ -164,10 +163,8 @@ namespace MobileEditor.SceneManagement
             GameObject gameObject = selectable.gameObject;
             RemoveAssetInstance(selectable.InstanceId);
 
-            if (_isNewObject)
+            if (selectable.IsNewObject)
             {
-                _isNewObject = false;
-
                 // No need to create an undo event if the object was still new.
                 Destroy(gameObject);
 
@@ -190,17 +187,17 @@ namespace MobileEditor.SceneManagement
 
         private void MovedObject(Transform transform, Vector3 initialPosition, Vector3 finalPosition)
         {
-            if (_isNewObject)
-            {
-                _isNewObject = false;
-                PlaceObject(transform, finalPosition);
-
-                return;
-            }
-
             if (!transform.TryGetComponent(out SelectableObject selectable))
             {
                 throw new ArgumentException($"Moved object does not have a {nameof(SelectableObject)} component.");
+            }
+
+            if (selectable.IsNewObject)
+            {
+                selectable.IsNewObject = false;
+                PlaceObject(transform, finalPosition);
+
+                return;
             }
 
             UndoMoveAction action = new UndoMoveAction(this, initialPosition, finalPosition, selectable.InstanceId);

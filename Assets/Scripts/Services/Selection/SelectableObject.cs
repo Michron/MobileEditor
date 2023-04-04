@@ -34,6 +34,11 @@ namespace MobileEditor.Services.Selection
         /// </summary>
         public Transform Transform { get; set; } = null!;
 
+        /// <summary>
+        /// Indicates if this object has just been created, or was already placed in the scene.
+        /// </summary>
+        public bool IsNewObject { get; set; }
+
         private void Awake()
         {
             Transform = transform;

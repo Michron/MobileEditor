@@ -50,12 +50,14 @@ namespace MobileEditor.InputHandling.InputStates
 
             Transform? transform = selectable!.Transform;
 
-            // The screenpoint will still be on the object, so getting the world point would raycast on the object itself.
-            // Instead get the fallback world point, which doesn't use a physics raycast.
-            Vector3 worldPoint = GetFallbackWorldPoint(touches[0].screenPosition);
+            // New objects are not guaranteed to spawn within the screen, so move them to where the current touch would approximately be.
+            if (selectable.IsNewObject)
+            {
+                Vector3 worldPoint = GetWorldPoint(touches[0].screenPosition);
+                transform.position = worldPoint;
+            }
 
-            // Start the move action, which disables colliders on the target so future frames can use a physics raycast.
-            _placementController.StartMoveAction(transform!, worldPoint);
+            _placementController.StartMoveAction(transform!);
 
             _uiManager.ChangeUIState(UIState.AssetEditing);
         }
@@ -112,19 +114,6 @@ namespace MobileEditor.InputHandling.InputStates
                 return hitInfo.point;
             }
 
-            return GetFallbackWorldPoint(ray);
-        }
-
-        private Vector3 GetFallbackWorldPoint(Vector2 screenPoint)
-        {
-            Camera camera = _cameraController.Camera;
-            Ray ray = camera.ScreenPointToRay(screenPoint);
-
-            return GetFallbackWorldPoint(ray);
-        }
-
-        private Vector3 GetFallbackWorldPoint(Ray ray)
-        {
             // Use the camera's height as a reference when creating a fallback value.
             // This should prevent the position from being too low, while still being visible in the viewport.
             float fallbackDistance = _cameraController.CameraTransform.position.y;

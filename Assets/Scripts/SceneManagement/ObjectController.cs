@@ -46,14 +46,10 @@ namespace MobileEditor.SceneManagement
         /// Initiates a new move action for an object. This will temporarily disable colliders on the object to avoid collision with other object.
         /// </summary>
         /// <param name="transform">The object to move.</param>
-        /// <param name="_targetPosition">The position to which the object should be moved immediately.</param>
-        public void StartMoveAction(Transform transform, Vector3 _targetPosition)
+        public void StartMoveAction(Transform transform)
         {
             _transform = transform;
             _initialPosition = _transform.position;
-
-            // Move the selection to the target position immediately, in case the object was spawned just now.
-            _transform.position = _targetPosition;
 
             // Disable colliders on the selected object to prevent side effects when moving it around.
             DisableColliders(_transform);
