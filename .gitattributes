@@ -1,0 +1,8 @@
+# Image/texture files
+*.[Pp][Nn][Gg] filter=lfs diff=lfs merge=lfs -text
+
+# Font files
+*.[Tt][Tt][Ff] filter=lfs diff=lfs merge=lfs -text
+
+# Documentation
+*.[Pp][Dd][Ff] filter=lfs diff=lfs merge=lfs -text

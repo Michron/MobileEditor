@@ -58,3 +58,8 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+#Visual Studio Code directory
+.vscode/
+
+#Editor user settings
+/[Uu]serSettings/
